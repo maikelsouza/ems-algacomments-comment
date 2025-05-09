@@ -7,6 +7,7 @@ import com.algaworks.algacomments.comment.api.model.ModerationOutput;
 import com.algaworks.algacomments.comment.domain.service.CommentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -18,12 +19,12 @@ import java.util.UUID;
 @RestController
 @RequestMapping("api/comments")
 @RequiredArgsConstructor
+@Slf4j
 public class CommentController {
 
     private final CommentService service;
 
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
     public ResponseEntity<?>  create(@Valid @RequestBody CommentInput commentInput){
         UUID uuid = UUID.randomUUID();
 
@@ -32,10 +33,11 @@ public class CommentController {
                         .text(commentInput.getText())
                         .build());
         if(!moderationOutput.isApproved()){
+            log.info("Comment {} not Approved for reason {}", uuid, moderationOutput.getReason());
             return ResponseEntity.unprocessableEntity().body(moderationOutput);
         }
         commentInput.setId(uuid);
-        return ResponseEntity.ok(service.create(commentInput));
+        return ResponseEntity.status(HttpStatus.CREATED).body(service.create(commentInput));
     }
 
     @GetMapping("{id}")
